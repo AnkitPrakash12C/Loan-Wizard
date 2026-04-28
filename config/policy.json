@@ -1,0 +1,19 @@
+{
+  "min_age": 21,
+  "max_age": 65,
+  "min_income": 15000,
+  "max_loan_income_multiple": 10,
+  "min_loan_amount": 10000,
+  "max_loan_amount": 5000000,
+  "allowed_employment_types": ["salaried", "self_employed", "business"],
+  "max_risk_score": 0.65,
+  "foir_limit": 0.40,
+  "processing_fee_pct": 0.02,
+  "interest_rates": {
+    "low": 10.5,
+    "medium": 13.5,
+    "high": 17.0,
+    "very_high": null
+  },
+  "tenure_options_months": [12, 24, 36, 48, 60]
+}

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Loan Offers – Loan Wizard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      color: #e0eaf5;
+      padding: 24px 16px 40px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo { font-weight: 800; font-size: 1.5rem; }
+    .logo span { color: #f6c90e; }
+    .tagline { color: #7a9cbf; font-size: 0.9rem; margin-top: 4px; }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* Decision banner */
+    .banner {
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    .banner.approved {
+      background: rgba(76,222,140,0.12);
+      border: 1px solid #4cde8c44;
+    }
+    .banner.declined {
+      background: rgba(255,127,127,0.12);
+      border: 1px solid #ff7f7f44;
+    }
+    .banner h2 { font-size: 1.5rem; margin-bottom: 10px; }
+    .banner p  { color: #aac4e0; font-size: 0.93rem; line-height: 1.6; }
+
+    /* Offers grid */
+    .offers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+    .offer-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 22px;
+      transition: border-color 0.2s, transform 0.15s;
+      cursor: pointer;
+      position: relative;
+    }
+    .offer-card:hover,
+    .offer-card.selected {
+      border-color: #f6c90e;
+      transform: translateY(-3px);
+      background: rgba(246,201,14,0.08);
+    }
+    .offer-card .tenure {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #7a9cbf;
+      margin-bottom: 6px;
+    }
+    .offer-card .emi {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #f6c90e;
+    }
+    .offer-card .emi-label { font-size: 0.75rem; color: #7a9cbf; }
+    .divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 14px 0; }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+      color: #aac4e0;
+    }
+    .meta-row span:last-child { color: #e0eaf5; font-weight: 600; }
+    .badge-selected {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: #f6c90e;
+      color: #0f2027;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: none;
+    }
+    .offer-card.selected .badge-selected { display: block; }
+
+    .accept-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #f6c90e, #e8a000);
+      color: #0f2027;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: none;
+      margin-bottom: 16px;
+    }
+    .accept-btn:hover { opacity: 0.9; }
+
+    /* Summary */
+    .summary-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .summary-card h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #7a9cbf;
+      margin-bottom: 10px;
+    }
+    .summary-card p { font-size: 0.88rem; color: #c0d8f0; line-height: 1.7; }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #7a9cbf;
+      font-size: 1rem;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: #f6c90e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .success-msg {
+      text-align: center;
+      padding: 24px;
+      background: rgba(76,222,140,0.1);
+      border: 1px solid #4cde8c44;
+      border-radius: 14px;
+      color: #4cde8c;
+      font-weight: 600;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">Loan<span>Wizard</span></div>
+  <div class="tagline">Your personalised loan offer</div>
+</header>
+
+<div class="container" id="app">
+  <div class="loading">
+    <div class="spinner"></div>
+    Loading your offers…
+  </div>
+</div>
+
+<script>
+  const SESSION_ID = new URLSearchParams(window.location.search).get('session');
+  if (!SESSION_ID) window.location.href = '/';
+
+  let selectedOfferId = null;
+  let allOffers = [];
+
+  async function loadOffers() {
+    try {
+      const resp = await fetch(`/api/offer/generate/${SESSION_ID}`, { method: 'POST' });
+      const data = await resp.json();
+      render(data);
+    } catch (e) {
+      document.getElementById('app').innerHTML =
+        `<div class="banner declined"><h2>⚠️ Error</h2><p>Could not load your offers. Please try again.</p></div>`;
+    }
+  }
+
+  function fmt(n) {
+    return '₹' + Number(n).toLocaleString('en-IN');
+  }
+
+  function render(data) {
+    allOffers = data.offers || [];
+    const app = document.getElementById('app');
+
+    const bannerClass = data.eligible ? 'approved' : 'declined';
+    const bannerIcon  = data.eligible ? '🎉' : '😔';
+    const bannerTitle = data.eligible ? 'Congratulations! You are eligible.' : 'Application Not Approved';
+
+    let html = `
+      <div class="banner ${bannerClass}">
+        <h2>${bannerIcon} ${bannerTitle}</h2>
+        <p>${data.explanation || ''}</p>
+      </div>
+    `;
+
+    if (data.eligible && allOffers.length) {
+      html += `<div class="offers-grid" id="offersGrid">`;
+      allOffers.forEach((o, i) => {
+        html += `
+          <div class="offer-card" id="card-${i}" onclick="selectOffer(${i})">
+            <div class="badge-selected">Selected</div>
+            <div class="tenure">${o.tenure_months} Month Plan</div>
+            <div class="emi">${fmt(o.emi)}</div>
+            <div class="emi-label">/ month</div>
+            <hr class="divider"/>
+            <div class="meta-row"><span>Loan Amount</span><span>${fmt(o.loan_amount)}</span></div>
+            <div class="meta-row"><span>Interest Rate</span><span>${o.annual_interest_rate}% p.a.</span></div>
+            <div class="meta-row"><span>Processing Fee</span><span>${fmt(o.processing_fee)}</span></div>
+            <div class="meta-row"><span>Type</span><span>${o.offer_type}</span></div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      html += `<button class="accept-btn" id="acceptBtn" onclick="acceptOffer()">✅ Accept Selected Offer</button>`;
+    }
+
+    if (data.summary) {
+      html += `
+        <div class="summary-card">
+          <h3>AI Assessment Summary</h3>
+          <p>${data.summary}</p>
+        </div>
+      `;
+    }
+
+    html += `<div class="success-msg" id="successMsg">✅ Offer accepted! Our team will contact you shortly.</div>`;
+
+    app.innerHTML = html;
+  }
+
+  function selectOffer(i) {
+    document.querySelectorAll('.offer-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById(`card-${i}`).classList.add('selected');
+    selectedOfferId = i;
+    document.getElementById('acceptBtn').style.display = 'block';
+  }
+
+  async function acceptOffer() {
+    if (selectedOfferId === null) return;
+    const offer = allOffers[selectedOfferId];
+    // In production, offer.id would come from the DB; here we show success UI
+    document.getElementById('acceptBtn').style.display = 'none';
+    document.getElementById('successMsg').style.display = 'block';
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+
+  loadOffers();
+</script>
+</body>
+</html>

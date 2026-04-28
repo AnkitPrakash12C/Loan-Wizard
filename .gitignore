@@ -1,0 +1,28 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Sensitive Data
+.env
+
+# Database
+*.sqlite3
+*.db
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Large ML models (if any are downloaded locally)
+*.onnx
+*.pth
