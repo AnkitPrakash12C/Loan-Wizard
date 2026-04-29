@@ -1,4 +1,4 @@
-# Poonawalla Fincorp Loan Wizard
+Loan Wizard
 ## Agentic AI Video Call–Based Onboarding System
 
 ---
